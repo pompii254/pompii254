@@ -1,61 +1,64 @@
-//+------------------------------------------------------------------+
-//| Script program start function                                      |
-//+------------------------------------------------------------------+
-int OnInit()
-{
-  return(INIT_SUCCEEDED);
-}
-
-//+------------------------------------------------------------------+
-//| Deinit function                                                   |
-//+------------------------------------------------------------------+
-void OnDeinit(const int reason)
-{
-  ObjectDelete(_Symbol);
-}
-
-//+------------------------------------------------------------------+
-//| Tick function                                                     |
-//+------------------------------------------------------------------+
-void OnTick()
-{
-  double stake = 5.0; // Initial stake
-  double targetProfit = 1000.0; // Target profit
-  double lossLimit = 500.0; // Loss limit
-  double randomIndex = MathRand() % 100; // Random index (0-99)
-  double syntheticIndex = MathRand() % 100; // Synthetic index (0-99)
-  double multiplier = 1.2; // Multiplier
-  int digitOver = 7; // Digit over value
-
-  // Calculate profit/loss
-  double profit = 0.0;
-  if (randomIndex > 60 && syntheticIndex > 50) {
-    profit = stake * 2.0; // Win condition
-  } else if (randomIndex < 40 && syntheticIndex < 30) {
-    profit = -stake * 1.5; // Loss condition
-  }
-
-  // Apply multiplier and digit over
-  if (profit > 0) {
-    profit *= multiplier;
-    if (MathAbs(profit) > digitOver) {
-      profit = digitOver;
-    }
-  }
-
-  // Check for stop-loss
-  if (profit < -lossLimit) {
-    profit = -lossLimit; // Stop-loss triggered
-  }
-
-  // Print result
-  printf("Profit: %.2f", profit);
-}
-
-//+------------------------------------------------------------------+
-//| Script deinit function                                            |
-//+------------------------------------------------------------------+
-void OnDeinit(const int reason)
-{
-  ObjectDelete(_Symbol);
-}
+ 
+import requests  
+import json  
+  
+# Deriv API settings  
+api_token = "YOUR_API_TOKEN"  
+api_url = "https://api.deriv.com/api/v1"  
+  
+# Set up the API connection  
+headers = {  
+   "Authorization": f"Bearer {api_token}",  
+   "Content-Type": "application/json"  
+}  
+  
+# Define the trade parameters  
+stake = 5.0  
+target_profit = 1000.0  
+loss_limit = 500.0  
+multiplier = 1.2  
+digit_over = 7  
+  
+# Define the trade function  
+def execute_trade(symbol, amount, type):  
+   data = {  
+      "symbol": symbol,  
+      "amount": amount,  
+      "type": type  
+   }  
+   response = requests.post(f"{api_url}/trade", headers=headers, json=data)  
+   if response.status_code == 200:  
+      print(f"Trade executed successfully: {symbol} {amount} {type}")  
+   else:  
+      print(f"Error executing trade: {response.text}")  
+  
+# Define the main function  
+def main():  
+   # Retrieve market data  
+   response = requests.get(f"{api_url}/market_data", headers=headers)  
+   if response.status_code == 200:  
+      market_data = response.json()  
+      # Calculate the profit/loss  
+      random_index = market_data["random_index"]  
+      synthetic_index = market_data["synthetic_index"]  
+      profit = 0.0  
+      if random_index &gt; 60 and synthetic_index &gt; 50:  
+        profit = stake * 2.0  
+      elif random_index &lt; 40 and synthetic_index &lt; 30:  
+        profit = -stake * 1.5  
+      # Apply multiplier and digit over  
+      if profit &gt; 0:  
+        profit *= multiplier  
+        if abs(profit) &gt; digit_over:  
+           profit = digit_over  
+      # Check for stop-loss  
+      if profit &lt; -loss_limit:  
+        profit = -loss_limit  
+      # Execute the trade  
+      if profit!= 0.0:  
+        execute_trade("EURUSD", profit, "buy" if profit &gt; 0 else "sell")  
+   else:  
+      print(f"Error retrieving market data: {response.text}")  
+  
+# Run the main function  
+main()  
