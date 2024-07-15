@@ -1,10 +1,17 @@
- 
 import requests  
 import json  
   
 # Deriv API settings  
 api_token = "YOUR_API_TOKEN"  
 api_url = "https://api.deriv.com/api/v1"  
+account_type = "real"  # or "demo"  
+symbol = "EURUSD"  
+amount = 5.0  
+stake = 5.0  
+target_profit = 1000.0  
+loss_limit = 500.0  
+multiplier = 1.2  
+digit_over = 7  
   
 # Set up the API connection  
 headers = {  
@@ -12,19 +19,13 @@ headers = {
    "Content-Type": "application/json"  
 }  
   
-# Define the trade parameters  
-stake = 5.0  
-target_profit = 1000.0  
-loss_limit = 500.0  
-multiplier = 1.2  
-digit_over = 7  
-  
 # Define the trade function  
 def execute_trade(symbol, amount, type):  
    data = {  
       "symbol": symbol,  
       "amount": amount,  
-      "type": type  
+      "type": type,  
+      "account_type": account_type  
    }  
    response = requests.post(f"{api_url}/trade", headers=headers, json=data)  
    if response.status_code == 200:  
@@ -34,11 +35,23 @@ def execute_trade(symbol, amount, type):
   
 # Define the main function  
 def main():  
+   # Authenticate and get the API token  
+   auth_data = {  
+      "api_token": api_token  
+   }  
+   response = requests.post(f"{api_url}/authorize", headers=headers, json=auth_data)  
+   if response.status_code == 200:  
+      api_token_response = response.json()  
+      api_token = api_token_response["api_token"]  
+      print(f"API token: {api_token}")  
+   else:  
+      print(f"Error authenticating: {response.text}")  
+      return  
+  
    # Retrieve market data  
    response = requests.get(f"{api_url}/market_data", headers=headers)  
    if response.status_code == 200:  
       market_data = response.json()  
-      # Calculate the profit/loss  
       random_index = market_data["random_index"]  
       synthetic_index = market_data["synthetic_index"]  
       profit = 0.0  
@@ -46,17 +59,20 @@ def main():
         profit = stake * 2.0  
       elif random_index &lt; 40 and synthetic_index &lt; 30:  
         profit = -stake * 1.5  
+  
       # Apply multiplier and digit over  
       if profit &gt; 0:  
         profit *= multiplier  
-        if abs(profit) &gt; digit_over:  
-           profit = digit_over  
+      if abs(profit) &gt; digit_over:  
+        profit = digit_over  
+  
       # Check for stop-loss  
       if profit &lt; -loss_limit:  
         profit = -loss_limit  
+  
       # Execute the trade  
       if profit!= 0.0:  
-        execute_trade("EURUSD", profit, "buy" if profit &gt; 0 else "sell")  
+        execute_trade(symbol, profit, "buy" if profit &gt; 0 else "sell")  
    else:  
       print(f"Error retrieving market data: {response.text}")  
   
